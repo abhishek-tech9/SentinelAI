@@ -1,0 +1,12 @@
+@echo off
+cd /d "C:\Users\abhis\OneDrive\Desktop\final year project"
+
+call venv\Scripts\activate
+
+start "" python backend\app.py
+
+timeout /t 5 /nobreak >nul
+
+start "" http://127.0.0.1:5000
+
+exit

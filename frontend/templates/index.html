@@ -1,0 +1,2600 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SentinelAI | Security Command Center</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+        }
+
+        :root {
+            --bg: #050914;
+            --panel: rgba(10, 18, 34, 0.90);
+            --panel2: rgba(13, 24, 43, 0.94);
+            --border: rgba(91, 213, 255, 0.18);
+
+            --cyan: #39d9ff;
+            --blue: #4d7cff;
+            --green: #36e59a;
+            --red: #ff4d67;
+            --orange: #ffad42;
+
+            --text: #edf8ff;
+            --muted: #7f95aa;
+        }
+
+        body {
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at 10% 10%, rgba(35,125,255,.13), transparent 30%),
+                radial-gradient(circle at 90% 20%, rgba(0,220,255,.08), transparent 25%),
+                radial-gradient(circle at 50% 100%, rgba(71,51,180,.12), transparent 35%),
+                var(--bg);
+
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+
+            background-image:
+                linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+
+            background-size: 40px 40px;
+            mask-image: linear-gradient(to bottom, black, transparent);
+
+            z-index: -1;
+        }
+
+        /* =========================================================
+           ALERT BANNER
+        ========================================================= */
+
+        .alert-banner {
+            display: none;
+
+            position: fixed;
+            top: 20px;
+            left: 50%;
+
+            transform: translateX(-50%);
+
+            width: min(850px, calc(100% - 30px));
+
+            padding: 17px 24px;
+
+            border: 1px solid rgba(255,77,103,.7);
+            border-radius: 14px;
+
+            background: rgba(80,8,25,.96);
+
+            color: #fff;
+            text-align: center;
+
+            font-weight: 700;
+
+            z-index: 9999;
+
+            box-shadow:
+                0 0 30px rgba(255,30,70,.35);
+        }
+
+        .alert-banner.show {
+            display: block;
+            animation: dangerPulse .8s infinite alternate;
+        }
+
+        @keyframes dangerPulse {
+
+            from {
+                box-shadow:
+                    0 0 20px rgba(255,30,70,.25);
+            }
+
+            to {
+                box-shadow:
+                    0 0 45px rgba(255,30,70,.65);
+            }
+
+        }
+
+        /* =========================================================
+           HEADER
+        ========================================================= */
+
+        header {
+            position: sticky;
+            top: 0;
+
+            z-index: 1000;
+
+            height: 78px;
+
+            padding: 0 5%;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            border-bottom: 1px solid var(--border);
+
+            background: rgba(4,9,20,.88);
+
+            backdrop-filter: blur(18px);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-icon {
+            width: 43px;
+            height: 43px;
+
+            display: grid;
+            place-items: center;
+
+            border: 1px solid rgba(57,217,255,.5);
+            border-radius: 12px;
+
+            color: var(--cyan);
+
+            font-size: 22px;
+
+            background: rgba(57,217,255,.07);
+
+            box-shadow:
+                0 0 25px rgba(57,217,255,.12);
+
+            transition: .25s ease;
+        }
+
+        .brand-icon:hover {
+            transform: rotate(8deg) scale(1.05);
+
+            box-shadow:
+                0 0 30px rgba(57,217,255,.28);
+        }
+
+        .brand h1 {
+            font-size: 21px;
+            letter-spacing: 1.5px;
+        }
+
+        .brand small {
+            display: block;
+
+            margin-top: 3px;
+
+            color: var(--muted);
+
+            font-size: 10px;
+
+            letter-spacing: 2px;
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+
+            gap: 9px;
+
+            padding: 9px 15px;
+
+            border: 1px solid rgba(54,229,154,.25);
+            border-radius: 30px;
+
+            background: rgba(54,229,154,.06);
+
+            color: var(--green);
+
+            font-size: 12px;
+            font-weight: 700;
+
+            letter-spacing: .7px;
+
+            box-shadow:
+                0 0 18px rgba(54,229,154,.04);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+
+            border-radius: 50%;
+
+            background: var(--green);
+
+            box-shadow:
+                0 0 12px var(--green);
+
+            animation: onlinePulse 1.5s infinite;
+        }
+
+        @keyframes onlinePulse {
+
+            50% {
+                opacity: .35;
+            }
+
+        }
+
+        /* =========================================================
+           LAYOUT
+        ========================================================= */
+
+        .container {
+            width: min(1450px, 92%);
+
+            margin: 28px auto 50px;
+        }
+
+        .hero {
+            margin-bottom: 22px;
+        }
+
+        .hero-title {
+            font-size: clamp(26px,4vw,42px);
+
+            font-weight: 700;
+
+            letter-spacing: -1px;
+        }
+
+        .hero-title span {
+            color: var(--cyan);
+
+            text-shadow:
+                0 0 20px rgba(57,217,255,.3);
+        }
+
+        .hero-subtitle {
+            margin-top: 7px;
+
+            color: var(--muted);
+
+            font-size: 13px;
+
+            letter-spacing: .5px;
+        }
+
+        /* =========================================================
+           METRICS
+        ========================================================= */
+
+        .cards {
+            display: grid;
+
+            grid-template-columns:
+                repeat(5,1fr);
+
+            gap: 15px;
+
+            margin-bottom: 20px;
+        }
+
+        .card {
+            position: relative;
+
+            overflow: hidden;
+
+            padding: 20px;
+
+            min-height: 135px;
+
+            border: 1px solid var(--border);
+
+            border-radius: 16px;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    var(--panel2),
+                    rgba(5,12,24,.78)
+                );
+
+            box-shadow:
+                0 15px 35px rgba(0,0,0,.18);
+
+            transition:
+                transform .25s ease,
+                border-color .25s ease,
+                box-shadow .25s ease;
+        }
+
+        .card::before {
+            content: "";
+
+            position: absolute;
+
+            left: 0;
+            right: 0;
+            bottom: 0;
+
+            height: 2px;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    transparent,
+                    var(--accent),
+                    transparent
+                );
+
+            opacity: .35;
+
+            transition: .3s ease;
+        }
+
+        .card::after {
+            content: "";
+
+            position: absolute;
+
+            width: 100px;
+            height: 100px;
+
+            right: -35px;
+            top: -35px;
+
+            border-radius: 50%;
+
+            background: var(--accent);
+
+            opacity: .08;
+
+            filter: blur(15px);
+
+            transition: .3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+
+            border-color:
+                color-mix(
+                    in srgb,
+                    var(--accent) 45%,
+                    transparent
+                );
+
+            box-shadow:
+                0 18px 42px rgba(0,0,0,.28),
+                0 0 25px color-mix(
+                    in srgb,
+                    var(--accent) 10%,
+                    transparent
+                );
+        }
+
+        .card:hover::before {
+            opacity: .9;
+        }
+
+        .card:hover::after {
+            opacity: .15;
+            transform: scale(1.2);
+        }
+
+        .total-card {
+            --accent: var(--blue);
+        }
+
+        .fire-card {
+            --accent: var(--red);
+        }
+
+        .smoke-card {
+            --accent: var(--orange);
+        }
+
+        .detection-card {
+            --accent: var(--cyan);
+        }
+
+        .confidence-card {
+            --accent: var(--green);
+        }
+
+        .card-label {
+            color: var(--muted);
+
+            font-size: 10px;
+
+            text-transform: uppercase;
+
+            letter-spacing: 1.5px;
+        }
+
+        .card-icon {
+            position: absolute;
+
+            right: 18px;
+            top: 17px;
+
+            font-size: 22px;
+
+            opacity: .75;
+
+            transition: .25s ease;
+        }
+
+        .card:hover .card-icon {
+            transform: scale(1.12);
+
+            opacity: 1;
+        }
+
+        .card .value {
+            margin-top: 13px;
+
+            color: var(--text);
+
+            font-size: 29px;
+
+            font-weight: 700;
+
+            transition: .25s ease;
+        }
+
+        .card:hover .value {
+            transform: translateX(2px);
+        }
+
+        .fire-card .value {
+            color: #ff6b7d;
+
+            text-shadow:
+                0 0 18px rgba(255,77,103,.25);
+        }
+
+        .smoke-card .value {
+            color: #ffc064;
+
+            text-shadow:
+                0 0 18px rgba(255,173,66,.22);
+        }
+
+        .fire-card .card-icon {
+            filter:
+                drop-shadow(
+                    0 0 8px rgba(255,77,103,.35)
+                );
+        }
+
+        .smoke-card .card-icon {
+            filter:
+                drop-shadow(
+                    0 0 8px rgba(255,173,66,.30)
+                );
+        }
+
+        .card-line {
+            width: 38px;
+            height: 3px;
+
+            margin-top: 13px;
+
+            border-radius: 5px;
+
+            background: var(--accent);
+
+            box-shadow:
+                0 0 12px var(--accent);
+        }
+
+        /* =========================================================
+           THREAT STATUS
+        ========================================================= */
+
+        .threat-panel {
+            margin-bottom: 20px;
+
+            padding: 18px 22px;
+
+            border: 1px solid rgba(54,229,154,.22);
+
+            border-radius: 16px;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    rgba(54,229,154,.06),
+                    rgba(7,15,28,.82)
+                );
+
+            display: flex;
+
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 15px;
+
+            transition: .3s ease;
+        }
+
+        .threat-left {
+            display: flex;
+
+            align-items: center;
+
+            gap: 13px;
+        }
+
+        .threat-icon {
+            width: 42px;
+            height: 42px;
+
+            display: grid;
+            place-items: center;
+
+            border-radius: 12px;
+
+            background:
+                rgba(54,229,154,.08);
+
+            color: var(--green);
+
+            font-size: 20px;
+        }
+
+        .threat-title {
+            font-size: 13px;
+
+            font-weight: 700;
+
+            letter-spacing: 1px;
+        }
+
+        .threat-subtitle {
+            margin-top: 3px;
+
+            color: var(--muted);
+
+            font-size: 10px;
+        }
+
+        .threat-status {
+            color: var(--green);
+
+            font-size: 13px;
+
+            font-weight: 800;
+
+            letter-spacing: 1.5px;
+        }
+
+        .threat-panel.danger {
+            border-color:
+                rgba(255,77,103,.5);
+
+            background:
+                rgba(80,8,25,.35);
+
+            box-shadow:
+                0 0 25px rgba(255,77,103,.08);
+        }
+
+        .threat-panel.danger .threat-icon {
+            color: var(--red);
+
+            background:
+                rgba(255,77,103,.10);
+        }
+
+        .threat-panel.danger .threat-status {
+            color: var(--red);
+
+            animation:
+                threatBlink 1s infinite alternate;
+        }
+
+        .threat-panel.warning {
+            border-color:
+                rgba(255,173,66,.45);
+
+            background:
+                rgba(80,45,8,.25);
+
+            box-shadow:
+                0 0 25px rgba(255,173,66,.06);
+        }
+
+        .threat-panel.warning .threat-icon {
+            color: var(--orange);
+
+            background:
+                rgba(255,173,66,.10);
+        }
+
+        .threat-panel.warning .threat-status {
+            color: var(--orange);
+        }
+
+        @keyframes threatBlink {
+
+            from {
+                opacity: .65;
+            }
+
+            to {
+                opacity: 1;
+            }
+
+        }
+
+        /* =========================================================
+           COMMON PANELS
+        ========================================================= */
+
+        .live-camera,
+        .section {
+            margin-bottom: 20px;
+
+            padding: 20px;
+
+            border: 1px solid var(--border);
+
+            border-radius: 18px;
+
+            background: var(--panel);
+
+            box-shadow:
+                0 20px 45px rgba(0,0,0,.18);
+
+            backdrop-filter: blur(12px);
+        }
+
+        .section-header {
+            display: flex;
+
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 15px;
+
+            margin-bottom: 15px;
+        }
+
+        .section-title {
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+
+            font-size: 15px;
+
+            letter-spacing: .6px;
+        }
+
+        .section-icon {
+            color: var(--cyan);
+
+            font-size: 18px;
+        }
+
+        .live-badge {
+            padding: 6px 10px;
+
+            border: 1px solid rgba(54,229,154,.25);
+
+            border-radius: 20px;
+
+            color: var(--green);
+
+            background:
+                rgba(54,229,154,.06);
+
+            font-size: 10px;
+
+            font-weight: 700;
+
+            letter-spacing: 1px;
+        }
+
+        /* =========================================================
+           CAMERA
+        ========================================================= */
+
+        .camera-box {
+            position: relative;
+
+            min-height: 430px;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            overflow: hidden;
+
+            border: 1px solid rgba(57,217,255,.16);
+
+            border-radius: 14px;
+
+            background: #02050b;
+        }
+
+        .camera-box::before {
+            content: "";
+
+            position: absolute;
+
+            inset: 12px;
+
+            border:
+                1px solid rgba(57,217,255,.09);
+
+            pointer-events: none;
+        }
+
+        .camera-box::after {
+            content: "";
+
+            position: absolute;
+
+            left: 0;
+            right: 0;
+            top: 0;
+
+            height: 2px;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    transparent,
+                    var(--cyan),
+                    transparent
+                );
+
+            box-shadow:
+                0 0 18px var(--cyan);
+
+            animation:
+                scan 4s linear infinite;
+
+            pointer-events: none;
+        }
+
+        @keyframes scan {
+
+            0% {
+                transform: translateY(0);
+                opacity: 0;
+            }
+
+            15%,
+            85% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(430px);
+                opacity: 0;
+            }
+
+        }
+
+        .camera-box img {
+            width: 100%;
+
+            max-height: 650px;
+
+            object-fit: contain;
+
+            display: block;
+        }
+
+        .camera-corners span {
+            position: absolute;
+
+            width: 25px;
+            height: 25px;
+
+            border-color: var(--cyan);
+
+            border-style: solid;
+
+            opacity: .7;
+
+            z-index: 2;
+        }
+
+        .corner-tl {
+            top: 12px;
+            left: 12px;
+
+            border-width:
+                2px 0 0 2px;
+        }
+
+        .corner-tr {
+            top: 12px;
+            right: 12px;
+
+            border-width:
+                2px 2px 0 0;
+        }
+
+        .corner-bl {
+            bottom: 12px;
+            left: 12px;
+
+            border-width:
+                0 0 2px 2px;
+        }
+
+        .corner-br {
+            bottom: 12px;
+            right: 12px;
+
+            border-width:
+                0 2px 2px 0;
+        }
+
+        .camera-status {
+            margin-top: 12px;
+
+            color: var(--green);
+
+            font-size: 11px;
+
+            letter-spacing: 1px;
+        }
+
+        /* =========================================================
+           TABLE
+        ========================================================= */
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+
+            border-collapse: collapse;
+
+            min-width: 600px;
+        }
+
+        th {
+            padding: 13px;
+
+            text-align: left;
+
+            color: var(--muted);
+
+            border-bottom:
+                1px solid var(--border);
+
+            font-size: 10px;
+
+            text-transform: uppercase;
+
+            letter-spacing: 1.4px;
+        }
+
+        td {
+            padding: 14px 13px;
+
+            border-bottom:
+                1px solid rgba(91,213,255,.07);
+
+            font-size: 12px;
+        }
+
+        tbody tr {
+            transition: .2s ease;
+        }
+
+        tbody tr:hover {
+            background:
+                rgba(57,217,255,.035);
+
+            transform: translateX(2px);
+        }
+
+        .fire {
+            color: var(--red);
+
+            font-weight: 700;
+        }
+
+        .smoke {
+            color: var(--orange);
+
+            font-weight: 700;
+        }
+
+        .other {
+            color: var(--cyan);
+
+            font-weight: 700;
+        }
+
+        .empty {
+            text-align: center;
+
+            color: var(--muted);
+
+            padding: 35px;
+        }
+
+        /* =========================================================
+           EVIDENCE
+        ========================================================= */
+
+        .evidence-gallery {
+            display: grid;
+
+            grid-template-columns:
+                repeat(3,1fr);
+
+            gap: 16px;
+        }
+
+        .evidence-item {
+            overflow: hidden;
+
+            border: 1px solid var(--border);
+
+            border-radius: 14px;
+
+            background:
+                rgba(7,15,28,.9);
+
+            transition: .25s ease;
+        }
+
+        .evidence-item:hover {
+            transform: translateY(-4px);
+
+            border-color:
+                rgba(57,217,255,.4);
+
+            box-shadow:
+                0 10px 30px rgba(0,0,0,.35);
+        }
+
+        .evidence-item img {
+            width: 100%;
+
+            height: 210px;
+
+            object-fit: cover;
+
+            display: block;
+        }
+
+        .evidence-name {
+            padding: 12px;
+
+            color: var(--muted);
+
+            font-size: 11px;
+
+            white-space: nowrap;
+
+            overflow: hidden;
+
+            text-overflow: ellipsis;
+        }
+
+        /* =========================================================
+           SOUND BUTTONS
+        ========================================================= */
+
+        #soundButton,
+        #stopButton {`r`n            margin-left: 10px;
+            position: fixed;
+
+            right: 22px;
+
+            z-index: 10000;
+
+            padding: 11px 16px;
+
+            border-radius: 30px;
+
+            cursor: pointer;
+
+            font-size: 11px;
+
+            font-weight: 700;
+
+            letter-spacing: .5px;
+
+            backdrop-filter: blur(10px);
+
+            transition: .2s ease;
+        }
+
+        #soundButton {
+            bottom: 22px;
+
+            border:
+                1px solid rgba(57,217,255,.25);
+
+            background:
+                rgba(7,15,28,.92);
+
+            color: var(--cyan);
+        }
+
+        #soundButton:hover {
+            transform: translateY(-2px);
+
+            border-color:
+                rgba(57,217,255,.55);
+
+            box-shadow:
+                0 0 18px rgba(57,217,255,.12);
+        }
+
+        #stopButton {`r`n            margin-left: 10px;
+            bottom: 72px;
+
+            border:
+                1px solid rgba(255,77,103,.5);
+
+            background: #350914;
+
+            color: var(--red);
+        }
+
+        #stopButton:hover {
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 0 18px rgba(255,77,103,.15);
+        }
+
+        /* =========================================================
+           FOOTER
+        ========================================================= */
+
+        footer {
+            padding: 15px 20px 35px;
+
+            text-align: center;
+
+            color: #52677b;
+
+            font-size: 10px;
+
+            letter-spacing: 1px;
+        }
+
+        /* =========================================================
+           RESPONSIVE
+        ========================================================= */
+
+        @media (max-width: 1150px) {
+
+            .cards {
+                grid-template-columns:
+                    repeat(3,1fr);
+            }
+
+        }
+
+        @media (max-width: 900px) {
+
+            .cards {
+                grid-template-columns:
+                    repeat(2,1fr);
+            }
+
+            .evidence-gallery {
+                grid-template-columns:
+                    repeat(2,1fr);
+            }
+
+            .camera-box {
+                min-height: 300px;
+            }
+
+        }
+
+        @media (max-width: 600px) {
+
+            header {
+                padding: 0 4%;
+            }
+
+            .brand h1 {
+                font-size: 17px;
+            }
+
+            .system-status {
+                padding: 7px 10px;
+
+                font-size: 9px;
+            }
+
+            .container {
+                width: 94%;
+            }
+
+            .cards {
+                grid-template-columns: 1fr;
+            }
+
+            .evidence-gallery {
+                grid-template-columns: 1fr;
+            }
+
+            .camera-box {
+                min-height: 230px;
+            }
+
+            .hero-title {
+                font-size: 27px;
+            }
+
+            .threat-panel {
+                align-items: flex-start;
+
+                flex-direction: column;
+            }
+
+            #soundButton,
+            #stopButton {`r`n            margin-left: 10px;
+                right: 12px;
+
+                font-size: 9px;
+
+                padding: 9px 12px;
+            }
+
+        }
+    
+
+        /* =========================================================
+           FINAL PROFESSIONAL POLISH
+        ========================================================= */
+
+        .card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 2px;
+            background: var(--accent);
+            opacity: .55;
+            box-shadow: 0 0 12px var(--accent);
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+            box-shadow: 0 14px 35px rgba(0,0,0,.28), 0 0 20px color-mix(in srgb, var(--accent) 8%, transparent);
+        }
+
+        .live-camera:hover,
+        .section:hover {
+            border-color: rgba(57,217,255,.22);
+        }
+
+        .camera-box {
+            box-shadow: inset 0 0 45px rgba(0,0,0,.35), 0 0 25px rgba(57,217,255,.04);
+        }
+
+        .camera-status::before {
+            content: "";
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            margin-right: 7px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 10px var(--green);
+            animation: livePulse 1.4s infinite;
+        }
+
+        @keyframes livePulse {
+            0%, 100% { opacity: .45; transform: scale(.85); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+
+        .evidence-item {
+            position: relative;
+        }
+
+        .evidence-item::before {
+            content: "EVIDENCE";
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 2;
+            padding: 4px 7px;
+            border: 1px solid rgba(57,217,255,.25);
+            border-radius: 5px;
+            color: var(--cyan);
+            background: rgba(2,5,11,.78);
+            font-size: 8px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            backdrop-filter: blur(5px);
+        }
+
+        @media (max-width: 900px) {
+            .evidence-gallery {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .evidence-gallery {
+                grid-template-columns: 1fr;
+            }
+
+            .camera-box {
+                min-height: 300px;
+            }
+        }
+\n</style>
+</head>
+
+<body>
+
+    <!-- =========================================================
+         ALERT BANNER
+    ========================================================= -->
+
+    <div id="alertBanner" class="alert-banner">
+
+        ðŸš¨ <strong>SENTINELAI ALERT</strong>
+
+        &nbsp; | &nbsp;
+
+        <span id="alertMessage">
+            Fire or smoke detected!
+        </span>
+
+    </div>
+
+
+    <!-- =========================================================
+         HEADER
+    ========================================================= -->
+
+    <header>
+
+        <div class="brand">
+
+            <div class="brand-icon">
+                &#9672;
+            </div>
+
+            <div>
+
+                <h1>
+                    SentinelAI
+                </h1>
+
+                <small>
+                    AI SECURITY COMMAND CENTER
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <div class="system-status">
+
+            <span class="status-dot"></span>
+
+            AI ENGINE ONLINE
+
+        </div>
+
+    </header>
+
+
+    <main class="container">
+
+        <!-- =====================================================
+             HERO
+        ===================================================== -->
+
+        <div class="hero">
+
+            <div class="hero-title">
+
+                Intelligent
+                <span>
+                    Threat Detection
+                </span>
+
+            </div>
+
+            <div class="hero-subtitle">
+
+                Real-time AI surveillance
+                &bull; Fire & Smoke detection
+                &bull; Emergency monitoring
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             METRICS
+        ===================================================== -->
+
+        <div class="cards">
+
+            <!-- TOTAL -->
+
+            <div class="card total-card">
+
+                <div class="card-icon">
+                    &#128202;
+                </div>
+
+                <div class="card-label">
+                    Total Alerts
+                </div>
+
+                <div
+                    class="value"
+                    id="totalAlerts"
+                >
+                    0
+                </div>
+
+                <div class="card-line"></div>
+
+            </div>
+
+
+            <!-- FIRE -->
+
+            <div class="card fire-card">
+
+                <div class="card-icon">
+                    &#128293;
+                </div>
+
+                <div class="card-label">
+                    Fire Detected
+                </div>
+
+                <div
+                    class="value"
+                    id="fireCount"
+                >
+                    0
+                </div>
+
+                <div class="card-line"></div>
+
+            </div>
+
+
+            <!-- SMOKE -->
+
+            <div class="card smoke-card">
+
+                <div class="card-icon">
+                    &#128168;
+                </div>
+
+                <div class="card-label">
+                    Smoke Detected
+                </div>
+
+                <div
+                    class="value"
+                    id="smokeCount"
+                >
+                    0
+                </div>
+
+                <div class="card-line"></div>
+
+            </div>
+
+
+            <!-- LATEST -->
+
+            <div class="card detection-card">
+
+                <div class="card-icon">
+                    &#127919;
+                </div>
+
+                <div class="card-label">
+                    Latest Detection
+                </div>
+
+                <div
+                    class="value"
+                    id="latestType"
+                >
+                    --
+                </div>
+
+                <div class="card-line"></div>
+
+            </div>
+
+
+            <!-- CONFIDENCE -->
+
+            <div class="card confidence-card">
+
+                <div class="card-icon">
+                    &#10003;
+                </div>
+
+                <div class="card-label">
+                    AI Confidence
+                </div>
+
+                <div
+                    class="value"
+                    id="latestConfidence"
+                >
+                    --
+                </div>
+
+                <div class="card-line"></div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             THREAT STATUS
+        ===================================================== -->
+
+        <div
+            id="threatPanel"
+            class="threat-panel"
+        >
+
+            <div class="threat-left">
+
+                <div
+                    class="threat-icon"
+                    id="threatIcon"
+                >
+                    &#10003;
+                </div>
+
+                <div>
+
+                    <div class="threat-title">
+                        CURRENT THREAT STATUS
+                    </div>
+
+                    <div
+                        class="threat-subtitle"
+                        id="threatSubtitle"
+                    >
+                        No active fire or smoke alert
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="threat-status"
+                id="threatStatus"
+            >
+                SYSTEM SECURE
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             LIVE CAMERA
+        ===================================================== -->
+
+        <div class="live-camera">
+
+            <div class="section-header">
+
+                <div class="section-title">
+
+                    <span class="section-icon">
+
+                    </span>
+
+                    LIVE AI CAMERA
+
+                </div>
+
+
+                <div class="live-badge">
+                    LIVE MONITORING
+                </div>
+
+            </div>
+
+
+            <div class="camera-box">
+
+                <div class="camera-corners">
+
+                    <span class="corner-tl"></span>
+                    <span class="corner-tr"></span>
+                    <span class="corner-bl"></span>
+                    <span class="corner-br"></span>
+
+                </div>
+
+
+                <img
+                    src="/video_feed"
+                    alt="SentinelAI Live AI Camera"
+                >
+
+            </div>
+
+
+            <p class="camera-status">
+                    <span>● REAL-TIME AI DETECTION ACTIVE</span>
+            </p>
+
+        </div>
+
+
+        <!-- =====================================================
+             ALERT HISTORY
+        ===================================================== -->
+
+        <div class="section">
+
+            <div class="section-header">
+                    <span class="section-icon">⚠</span>
+
+                    ALERT HISTORY
+
+                </div>
+
+
+                <div class="live-badge">
+                    AUTO REFRESH
+                </div>
+
+            </div>
+
+
+            <div class="table-wrap">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                ID
+                            </th>
+
+                            <th>
+                                Detection Type
+                            </th>
+
+                            <th>
+                                Confidence
+                            </th>
+
+                            <th>
+                                Timestamp
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="alertTable">
+
+                        <tr>
+
+                            <td
+                                colspan="4"
+                                class="empty"
+                            >
+                                Loading alerts...
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             EVIDENCE
+        ===================================================== -->
+
+        <div class="section">
+
+            <div class="section-header">
+
+                <div class="section-title">
+
+                    <span class="section-icon">
+                        &#9635;
+                    </span>
+
+                    RECENT EVIDENCE
+
+                </div>
+
+
+                <div class="live-badge">
+                    AI CAPTURED
+                </div>
+
+            </div>
+
+
+            <div
+                id="evidenceGallery"
+                class="evidence-gallery"
+            >
+
+                <div class="empty">
+                    Loading evidence...
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <!-- =========================================================
+         FOOTER
+    ========================================================= -->
+
+    <footer>
+
+        SENTINELAI (C) 2026
+        &nbsp;|&nbsp;
+        AI-POWERED FIRE, SMOKE & EMERGENCY ALERT SYSTEM
+
+    </footer>
+
+
+    <!-- =========================================================
+         SOUND CONTROLS
+    ========================================================= -->
+
+    <button
+        id="soundButton"
+        onclick="enableAlertSound()"
+    >
+        ENABLE ALERT SOUND
+    </button>
+
+
+    <button
+        id="stopButton"
+        onclick="stopAlertAlarm()"
+    >
+        STOP ALARM
+    </button>
+
+
+<script>
+
+/* =========================================================
+   GLOBAL VARIABLES
+========================================================= */
+
+let lastAlertId = null;
+
+let audioContext = null;
+
+let soundEnabled = false;
+
+let alarmInterval = null;
+
+let alarmStopped = false;
+
+let alarmOscillator = null;
+
+let alarmGain = null;
+
+
+/* =========================================================
+   ALERT SOUND
+========================================================= */
+
+function enableAlertSound() {
+
+    try {
+
+        audioContext = new (
+            window.AudioContext ||
+            window.webkitAudioContext
+        )();
+
+        audioContext.resume();
+
+        soundEnabled = true;
+
+        alarmStopped = false;
+
+        const button =
+            document.getElementById(
+                "soundButton"
+            );
+
+        if (button) {
+
+            button.textContent =
+                "ALERT SOUND ENABLED";
+
+            button.style.color =
+                "#36e59a";
+
+        }
+
+        playAlertBeep();
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Audio error:",
+            error
+        );
+
+    }
+
+}
+
+
+function playAlertBeep() {
+
+    if (alarmStopped) {
+        return;
+    }
+
+    if (
+        !soundEnabled ||
+        !audioContext
+    ) {
+        return;
+    }
+
+    if (alarmInterval !== null) {
+        return;
+    }
+
+
+    function beep() {
+
+        if (!audioContext) {
+            return;
+        }
+
+
+        alarmOscillator =
+            audioContext.createOscillator();
+
+
+        alarmGain =
+            audioContext.createGain();
+
+
+        alarmOscillator.type =
+            "square";
+
+
+        alarmOscillator.frequency.value =
+            1200;
+
+
+        alarmGain.gain.value =
+            0.30;
+
+
+        alarmOscillator.connect(
+            alarmGain
+        );
+
+
+        alarmGain.connect(
+            audioContext.destination
+        );
+
+
+        alarmOscillator.start();
+
+
+        setTimeout(
+            () => {
+
+                if (alarmOscillator) {
+
+                    try {
+
+                        alarmOscillator.stop();
+
+                        alarmOscillator.disconnect();
+
+                        alarmGain.disconnect();
+
+                    }
+
+                    catch (e) {}
+
+                }
+
+            },
+            80
+        );
+
+    }
+
+
+    beep();
+
+
+    alarmInterval =
+        setInterval(
+            beep,
+            120
+        );
+
+}
+
+
+function stopAlertAlarm() {
+
+    alarmStopped = true;
+
+
+    if (alarmInterval !== null) {
+
+        clearInterval(
+            alarmInterval
+        );
+
+        alarmInterval = null;
+
+    }
+
+
+    if (alarmOscillator) {
+
+        try {
+            alarmOscillator.stop();
+        }
+        catch (e) {}
+
+        try {
+            alarmOscillator.disconnect();
+        }
+        catch (e) {}
+
+        alarmOscillator = null;
+
+    }
+
+
+    if (alarmGain) {
+
+        try {
+            alarmGain.disconnect();
+        }
+        catch (e) {}
+
+        alarmGain = null;
+
+    }
+
+}
+
+
+/* =========================================================
+   BROWSER NOTIFICATION
+========================================================= */
+
+if (
+    "Notification" in window &&
+    Notification.permission === "default"
+) {
+
+    Notification.requestPermission();
+
+}
+
+
+/* =========================================================
+   THREAT STATUS
+========================================================= */
+
+function updateThreatStatus(alerts) {
+
+    const panel =
+        document.getElementById(
+            "threatPanel"
+        );
+
+
+    const icon =
+        document.getElementById(
+            "threatIcon"
+        );
+
+
+    const status =
+        document.getElementById(
+            "threatStatus"
+        );
+
+
+    const subtitle =
+        document.getElementById(
+            "threatSubtitle"
+        );
+
+
+    if (
+        !panel ||
+        !status
+    ) {
+        return;
+    }
+
+
+    panel.classList.remove(
+        "danger",
+        "warning"
+    );
+
+
+    if (
+        !alerts ||
+        alerts.length === 0
+    ) {
+
+        icon.textContent =
+            "&#10003;";
+
+
+        status.textContent =
+            "SYSTEM SECURE";
+
+
+        subtitle.textContent =
+            "No active fire or smoke alert";
+
+
+        return;
+
+    }
+
+
+    const latest =
+        alerts[0];
+
+
+    const alertTime = new Date(latest.timestamp).getTime();
+    const alertAge = Date.now() - alertTime;
+
+    if (isNaN(alertTime) || alertAge > 60000) {
+        icon.textContent = '✓';
+        status.textContent = 'SYSTEM SECURE';
+        subtitle.textContent = 'No active fire or smoke alert';
+        return;
+    }
+
+    const type =
+        String(
+            latest.type || ""
+        ).toLowerCase();
+
+
+    if (type === "fire") {
+
+        panel.classList.add(
+            "danger"
+        );
+
+
+        icon.textContent =
+            "&#128293;";
+
+
+        status.textContent =
+            "FIRE DETECTED";
+
+
+        subtitle.textContent =
+            "Immediate emergency attention required";
+
+    }
+
+    else if (type === "smoke") {
+
+        panel.classList.add(
+            "warning"
+        );
+
+
+        icon.textContent =
+            "&#128168;";
+
+
+        status.textContent =
+            "SMOKE DETECTED";
+
+
+        subtitle.textContent =
+            "Potential fire hazard detected";
+
+    }
+
+    else {
+
+        icon.textContent =
+            "âš ";
+
+
+        status.textContent =
+            "THREAT DETECTED";
+
+
+        subtitle.textContent =
+            "AI detection requires attention";
+
+    }
+
+}
+
+
+/* =========================================================
+   SHOW ALERT
+========================================================= */
+
+function showAlert(alert) {
+
+    alarmStopped = false;
+
+    playAlertBeep();
+
+
+    const banner =
+        document.getElementById(
+            "alertBanner"
+        );
+
+
+    const message =
+        document.getElementById(
+            "alertMessage"
+        );
+
+
+    if (
+        !banner ||
+        !message
+    ) {
+        return;
+    }
+
+
+    const confidence =
+        Math.round(
+            Number(
+                alert.confidence
+            ) * 100
+        );
+
+
+    message.textContent =
+        String(
+            alert.type
+        ).toUpperCase() +
+        " DETECTED &mdash; CONFIDENCE: " +
+        confidence +
+        "%";
+
+
+    banner.classList.add(
+        "show"
+    );
+
+
+    if (
+        "Notification" in window &&
+        Notification.permission === "granted"
+    ) {
+
+        new Notification(
+            "ðŸš¨ SentinelAI Alert",
+            {
+                body:
+                    String(
+                        alert.type
+                    ).toUpperCase() +
+                    " detected &mdash; Confidence " +
+                    confidence +
+                    "%"
+            }
+        );
+
+    }
+
+
+    setTimeout(
+        function () {
+
+            banner.classList.remove(
+                "show"
+            );
+
+        },
+        8000
+    );
+
+}
+
+
+/* =========================================================
+   LOAD ALERTS
+========================================================= */
+
+async function loadAlerts() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/alerts?time=" +
+                Date.now(),
+                {
+                    cache: "no-store"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "HTTP " +
+                response.status
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        const alerts =
+            data.alerts || [];
+
+
+        /* =====================================================
+           TOTAL
+        ===================================================== */
+
+        document.getElementById(
+            "totalAlerts"
+        ).textContent =
+            data.count || 0;
+
+
+        /* =====================================================
+           COUNTS
+        ===================================================== */
+
+        let fireCount = 0;
+
+        let smokeCount = 0;
+
+
+        alerts.forEach(
+            alert => {
+
+                const type =
+                    String(
+                        alert.type || ""
+                    ).toLowerCase();
+
+
+                if (type === "fire") {
+
+                    fireCount++;
+
+                }
+
+
+                if (type === "smoke") {
+
+                    smokeCount++;
+
+                }
+
+            }
+        );
+
+
+        document.getElementById(
+            "fireCount"
+        ).textContent =
+            fireCount;
+
+
+        document.getElementById(
+            "smokeCount"
+        ).textContent =
+            smokeCount;
+
+
+        /* =====================================================
+           THREAT STATUS
+        ===================================================== */
+
+        updateThreatStatus(
+            alerts
+        );
+
+
+        /* =====================================================
+           NEW ALERT
+        ===================================================== */
+
+        if (
+            alerts.length > 0
+        ) {
+
+            const latest =
+                alerts[0];
+
+
+            if (
+                lastAlertId === null
+            ) {
+
+                lastAlertId =
+                    latest.id;
+
+            }
+
+            else if (
+                Number(
+                    latest.id
+                ) >
+                Number(
+                    lastAlertId
+                )
+            ) {
+
+                lastAlertId =
+                    latest.id;
+
+
+                showAlert(
+                    latest
+                );
+
+            }
+
+
+            document.getElementById(
+                "latestType"
+            ).textContent =
+                String(
+                    latest.type
+                ).toUpperCase();
+
+
+            document.getElementById(
+                "latestConfidence"
+            ).textContent =
+                Math.round(
+                    Number(
+                        latest.confidence
+                    ) * 100
+                ) +
+                "%";
+
+        }
+
+
+        /* =====================================================
+           TABLE
+        ===================================================== */
+
+        const table =
+            document.getElementById(
+                "alertTable"
+            );
+
+
+        if (
+            alerts.length === 0
+        ) {
+
+            table.innerHTML = `
+                <tr>
+                    <td
+                        colspan="4"
+                        class="empty"
+                    >
+                        No alerts detected
+                    </td>
+                </tr>
+            `;
+
+            return;
+
+        }
+
+
+        table.innerHTML =
+            "";
+
+
+        alerts.forEach(
+            alert => {
+
+                const row =
+                    document.createElement(
+                        "tr"
+                    );
+
+
+                const type =
+                    String(
+                        alert.type || ""
+                    ).toLowerCase();
+
+
+                let typeClass =
+                    "other";
+
+
+                if (
+                    type === "fire"
+                ) {
+
+                    typeClass =
+                        "fire";
+
+                }
+
+                else if (
+                    type === "smoke"
+                ) {
+
+                    typeClass =
+                        "smoke";
+
+                }
+
+
+                row.innerHTML = `
+
+                    <td>
+                        #${alert.id}
+                    </td>
+
+                    <td class="${typeClass}">
+                        ${type.toUpperCase()}
+                    </td>
+
+                    <td>
+                        ${Math.round(
+                            Number(
+                                alert.confidence
+                            ) * 100
+                        )}%
+                    </td>
+
+                    <td>
+                        ${new Date(
+                            alert.timestamp
+                        ).toLocaleString()}
+                    </td>
+
+                `;
+
+
+                table.appendChild(
+                    row
+                );
+
+            }
+        );
+
+    }
+
+
+    catch (error) {
+
+        console.error(
+            "Alert loading error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   LOAD EVIDENCE
+========================================================= */
+
+async function loadEvidence() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/evidence?time=" +
+                Date.now(),
+                {
+                    cache: "no-store"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "HTTP " +
+                response.status
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        const gallery =
+            document.getElementById(
+                "evidenceGallery"
+            );
+
+
+        if (
+            !data.evidence ||
+            data.evidence.length === 0
+        ) {
+
+            gallery.innerHTML = `
+                <div class="empty">
+                    No evidence images available
+                </div>
+            `;
+
+            return;
+
+        }
+
+
+        gallery.innerHTML =
+            "";
+
+
+        data.evidence.forEach(
+            item => {
+
+                const div =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                div.className =
+                    "evidence-item";
+
+
+                div.innerHTML = `
+
+                    <img
+                        src="${item.url}?t=${Date.now()}"
+                        alt="SentinelAI Evidence"
+                        loading="lazy"
+                    >
+
+                    <div class="evidence-name">
+                        ${item.filename}
+                    </div>
+
+                `;
+
+
+                gallery.appendChild(
+                    div
+                );
+
+            }
+        );
+
+    }
+
+
+    catch (error) {
+
+        console.error(
+            "Evidence loading error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   START
+========================================================= */
+
+loadAlerts();
+
+loadEvidence();
+
+
+/* =========================================================
+   AUTO REFRESH
+========================================================= */
+
+setInterval(
+    loadAlerts,
+    2000
+);
+
+
+setInterval(
+    loadEvidence,
+    10000
+);
+
+</script>
+
+</body>
+</html>
